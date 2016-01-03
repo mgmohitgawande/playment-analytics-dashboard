@@ -18,18 +18,15 @@ function makeGraphs(error, usersData, tasksData, task_submissionData) {
     
     //for tasks
     tasksData.forEach(function(d){
-        d.gender=genderHash[d.user_id];
-        if(d.gender==undefined)   console.log(d);
-        
+        d.gender=genderHash[d.user_id] ? genderHash[d.user_id] : 'other';
         d.created_at = new Date(d.created_at);
     });
     
     //for task_submissions
     task_submissionData.forEach(function(d){
-        d.gender=genderHash[d.user_id];
-        
+        d.gender=genderHash[d.user_id] ? genderHash[d.user_id] : 'other';
         d.created_at = new Date(d.created_at);
-    })
+    });
     
     //crossfilter instance for users
 	var users = crossfilter(usersData);
