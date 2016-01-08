@@ -19,33 +19,19 @@ function makeGraphs(error, usersData, tasksData, task_submissionData) {
         tasksHash[d.id]=d;
     });
     
-//vailidation
-    
-    // tasksData.forEach(function(d){
-    //     if(!userHash[d.user_id]){
-    //         userHash[d.user_id]={id: d.user_id, gender: 'other'}
-    //     }
-    // })
-
     task_submissionData.forEach(function(d){
         if(!tasksHash[d.task_id]){
-            tasksHash[d.task_id]={id: d.task_id, user_id: d.user_id, created_at: new Date("2015-12-24 19:31:30.853+05:30")};
+            tasksHash[d.task_id]={id: d.task_id, user_id: d.user_id, created_at: new Date("2015-12-24 19:31:30.853+05:30"), submitted_at : d.created_at, submission_id : d.id};
             if(!userHash[d.user_id]){
                 userHash[d.user_id]={id: d.user_id, gender: 'other', tasks:[]};
             }
         }
         else{
-            tasksHash[d.task_id].submitted_at=d.created_at;
+            tasksHash[d.task_id].submitted_at=new Date (d.created_at);
             tasksHash[d.task_id].submission_id=d.id;
         } 
     });
-    
-    // //test
-    // task_submissionData.forEach(function(d){
-    //     if(!userHash[d.user_id])    console.log(d);
-    //     if(!tasksHash[d.task_id])   console.log(d);
-    // });
-    
+        
     for(var key in tasksHash){
         userHash[tasksHash[key].user_id].tasks.push(tasksHash[key]);
     }
@@ -76,21 +62,15 @@ function makeGraphs(error, usersData, tasksData, task_submissionData) {
     
     var data = crossfilter(finalData);
     
-    var byUser = data.dimension(function(d){
-        return d.user_id;
-    });
-    var userGroup = byUser.group()
-    var reduceGender= userGroup.reduce(function(p, v){
-        return v.gender;
-    }, function(p, v){
-        return v.gender;
-    }, function(){
-        return 'other';
-    })
+    var createdAt=data.dimension(function(d){return d3.time.hour(d.created_at)});
+    var byCreatedAt=createdAt.group();
     
-    console.log(reduceGender);
-    console.log(byUser.group().top(Infinity));
-        
+    var submittedAt=data.dimension(function(d){return d3.time.hour(d.submitted_at)});
+    var bySubmittedAt=createdAt.group();
+    
+    var taskGender = data.dimension(function(d){ if(d.task_id) {return gender;} })
+    var taskGenderGroup = taskGender.group();
+    
     //for tasks
     tasksData.forEach(function(d){
         d.gender=userHash[d.user_id]? (userHash[d.user_id].gender ? userHash[d.user_id].gender : 'other')  : 'other';
@@ -141,8 +121,8 @@ function makeGraphs(error, usersData, tasksData, task_submissionData) {
 		//.width(600)
 		.height(300)
 		.margins({top: 10, right: 50, bottom: 30, left: 50})
-		.dimension(taskCreated)
-		.group(taskByCreatedDate)
+		.dimension(createdAt)
+		.group(byCreatedAt)
 		.renderArea(true)
 		.transitionDuration(500)
 		.x(d3.time.scale().domain([task_minDate, task_maxDate]))
@@ -153,8 +133,8 @@ function makeGraphs(error, usersData, tasksData, task_submissionData) {
 		.yAxis().ticks(6);
     
     //tasks picked => 1. define gender dimension, 2. group tasks based on gender    
-    var taskGender = tasks.dimension(function(d){ return d.gender; });
-    var taskGenderGroup = taskGender.group();
+    // var taskGender = tasks.dimension(function(d){ return d.gender; });
+    // var taskGenderGroup = taskGender.group();
     
     //gender distribution pie chart of tasks picked
     var taskGenderDistributionChart = dc.pieChart("#date-task-gender");
@@ -189,8 +169,8 @@ function makeGraphs(error, usersData, tasksData, task_submissionData) {
 		//.width(600)
 		.height(300)
 		.margins({top: 10, right: 50, bottom: 30, left: 50})
-		.dimension(taskSubmitted)
-		.group(taskBySubmittedDate)
+		.dimension(submittedAt)
+		.group(bySubmittedAt)
 		.renderArea(true)
 		.transitionDuration(500)
 		.x(d3.time.scale().domain([sub_minDate, sub_maxDate]))
